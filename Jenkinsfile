@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/Fardaad-Khan/travel-app.git'
+                git branch: 'main', url: 'https://github.com/Fardaad-Khan/travel-app.git'
             }
         }
 
