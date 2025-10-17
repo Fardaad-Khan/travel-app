@@ -20,7 +20,7 @@ app.register_blueprint(booking_bp)
 
 @app.route('/')
 def home():
-    return {"message": "Travel App Backend Running"}
+    return {"message": "Travel App Backend Running -v2"}
 
 if __name__ == '__main__':
     with app.app_context():
