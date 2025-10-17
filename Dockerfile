@@ -1,42 +1,17 @@
-pipeline {
-    agent any
+# Use an official lightweight Python image
+FROM python:3.12-slim
 
-    stages {
-        stage('Clone Repository') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Fardaad-Khan/travel-app.git'
-            }
-        }
+# Set working directory inside container
+WORKDIR /app
 
-        stage('Install Dependencies') {
-            steps {
-                sh 'pip install -r requirements.txt'
-            }
-        }
+# Copy all project files into the container
+COPY . .
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t travel-app-backend .'
-            }
-        }
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-        stage('Run Container') {
-            steps {
-                sh '''
-                docker stop travel-app-backend || true
-                docker rm travel-app-backend || true
-                docker run -d -p 5000:5000 --name travel-app-backend travel-app-backend
-                '''
-            }
-        }
-    }
+# Expose port Flask will run on
+EXPOSE 5000
 
-    post {
-        success {
-            echo '✅ Build & Deployment Successful!'
-        }
-        failure {
-            echo '❌ Build Failed!'
-        }
-    }
-}
+# Command to start the Flask app
+CMD ["python", "app.py"]
