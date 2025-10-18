@@ -10,7 +10,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
 
     def set_password(self, password):
+        """Hashes and sets the user's password."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
+        """Verifies a password against the stored hash."""
         return check_password_hash(self.password_hash, password)
