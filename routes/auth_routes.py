@@ -47,8 +47,10 @@ def login():
 
     user = User.query.filter_by(email=email).first()
     if user and user.check_password(password):
-        token = create_access_token(identity=user.id)
+        # ✅ FIX: identity must be a string
+        token = create_access_token(identity=str(user.id))
         return jsonify({'access_token': token}), 200
+
     return jsonify({'message': 'Invalid credentials'}), 401
 
 
@@ -58,8 +60,10 @@ def login():
 @auth_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def profile():
-    current_user_id = get_jwt_identity()
+    # ✅ FIX: convert JWT identity back to integer
+    current_user_id = int(get_jwt_identity())
     user = User.query.get(current_user_id)
+
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
