@@ -13,7 +13,7 @@ CORS(app)
 db.init_app(app)
 jwt = JWTManager(app)
 
-# Register blueprints
+# Register Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(destination_bp)
 app.register_blueprint(booking_bp)
@@ -23,9 +23,9 @@ def home():
     return {"message": "Travel App Backend Running -v6"}
 
 if __name__ == '__main__':
-    print("🗄️  Initializing database...")
+    print("🗄️ Initializing database...")
     with app.app_context():
+        from models.booking import Booking  # ensure model loaded
         db.create_all()
     print("✅ Database ready. Starting server...")
     app.run(host='0.0.0.0', port=5000, debug=True)
-
