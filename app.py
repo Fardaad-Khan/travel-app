@@ -23,6 +23,9 @@ def home():
     return {"message": "Travel App Backend Running -v6"}
 
 if __name__ == '__main__':
+    print("🗄️  Initializing database...")
     with app.app_context():
         db.create_all()
+    print("✅ Database ready. Starting server...")
     app.run(host='0.0.0.0', port=5000, debug=True)
+
