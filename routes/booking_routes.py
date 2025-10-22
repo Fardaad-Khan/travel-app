@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.booking import db, Booking
+from datetime import datetime
 
-# ✅ Blueprint must be defined before using decorators
 booking_bp = Blueprint('bookings', __name__, url_prefix='/bookings')
 
 
@@ -18,24 +18,32 @@ def create_booking():
         user_id = get_jwt_identity()
         print("👤 Current user ID:", user_id)
 
+        # Required fields
         destination = data.get("destination")
         days = data.get("days")
         customer_name = data.get("customer_name")
 
-        # Basic validation
         if not destination or not days or not customer_name:
-            print("🚫 Missing one or more fields")
+            print("🚫 Missing one or more required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Create new booking entry
+        # Optional fields
+        travel_date_str = data.get("travel_date")
+        travel_date = datetime.strptime(travel_date_str, "%Y-%m-%d").date() if travel_date_str else None
+        travelers = int(data.get("travelers", 1))
+        special_requests = data.get("special_requests", "")
+
+        # Create booking
         new_booking = Booking(
             user_id=user_id,
             destination=destination,
             days=int(days),
-            customer_name=customer_name
+            customer_name=customer_name,
+            travel_date=travel_date,
+            travelers=travelers,
+            special_requests=special_requests
         )
 
-        # Commit to database
         db.session.add(new_booking)
         db.session.commit()
 
