@@ -16,10 +16,12 @@ CORS(
     resources={r"/*": {"origins": [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://travel-app-frontend.onrender.com"
+        "https://travel-app-frontend.onrender.com",
+        "https://travel-app-frontend-ten3.onrender.com"   
     ]}},
     supports_credentials=True
 )
+
 
 db.init_app(app)
 jwt = JWTManager(app)
