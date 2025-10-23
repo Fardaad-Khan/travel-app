@@ -2,9 +2,15 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from prometheus_flask_exporter import PrometheusMetrics
-import psutil
 import time
+
+# NEW: Import Prometheus (safe – if not installed, it skips)
+try:
+    from prometheus_flask_exporter import PrometheusMetrics
+    METRICS_ENABLED = True
+except ImportError:
+    METRICS_ENABLED = False
+    print("⚠️ Prometheus not available – install with pip install prometheus-flask-exporter")
 
 from models.user import db
 from routes.auth_routes import auth_bp
@@ -18,7 +24,7 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Add start time for uptime (optional)
+# Add start time for uptime
 app.start_time = time.time()
 
 # ------------------------------------------------------------------
@@ -41,19 +47,29 @@ CORS(
 db.init_app(app)
 jwt = JWTManager(app)
 
-# NEW: Prometheus metrics
-metrics = PrometheusMetrics(app, path='/metrics')
-metrics.info('app_info', 'Travel App Backend', version='v6')
+# NEW: Initialize metrics EARLY (before blueprints)
+if METRICS_ENABLED:
+    metrics = PrometheusMetrics(app, path='/metrics')
+    metrics.info('app_info', 'Travel App Backend', version='v6')
 
-# Optional: Track system stats in health
-@app.route('/health')
-def health():
-    return jsonify({
-        "status": "healthy",
-        "cpu_percent": psutil.cpu_percent(),
-        "memory_percent": psutil.virtual_memory().percent,
-        "uptime_seconds": int(time.time() - app.start_time)
-    }), 200
+# Enhanced health with optional psutil
+try:
+    import psutil
+    @app.route('/health')
+    def health():
+        return jsonify({
+            "status": "healthy",
+            "cpu_percent": psutil.cpu_percent(),
+            "memory_percent": psutil.virtual_memory().percent,
+            "uptime_seconds": int(time.time() - app.start_time)
+        }), 200
+except ImportError:
+    @app.route('/health')
+    def health():
+        return jsonify({
+            "status": "healthy",
+            "uptime_seconds": int(time.time() - app.start_time)
+        }), 200
 
 # ------------------------------------------------------------------
 # 4. Register Blueprints (unchanged)
