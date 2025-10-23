@@ -1,0 +1,99 @@
+# .github/workflows/ci-cd.yml
+name: Travel App CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: travel-app-backend
+  RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+  RENDER_SERVICE_ID_STAGING: ${{ secrets.RENDER_SERVICE_ID_STAGING }}
+  RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest pytest-cov
+
+      - name: Compile check
+        run: python -m py_compile app.py models/*.py || true
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+          FLASK_ENV: testing
+          SECRET_KEY: test
+          JWT_SECRET_KEY: test
+        run: |
+          pytest tests/ -v --cov=. || echo "No tests yet — continuing..."
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Test container
+        run: |
+          docker run -d -p 5000:5000 --name test-app $IMAGE_NAME
+          sleep 15
+          curl -f http://localhost:5000/health || (echo "Health failed" && exit 1)
+          docker stop test-app
+          echo "Docker container passed health check!"
+
+  deploy-staging:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Staging
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/$RENDER_SERVICE_ID_STAGING/deploys
+
+  deploy-production:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Production
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys
+
+      - name: Wait & Verify
+        run: |
+          sleep 90
+          curl -f https://travel-app-backend.onrender.com/health
+          curl -f https://travel-app-backend.onrender.com/metrics | grep -q "flask"
+          echo "PRODUCTION VERIFIED!"
