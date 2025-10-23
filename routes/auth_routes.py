@@ -3,8 +3,12 @@ from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity
 )
 from models.user import db, User
+import re
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+# Email validation regex
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
 
 # ----------------------
 # User Registration
@@ -19,6 +23,10 @@ def register():
     # Validate required fields
     if not username or not email or not password:
         return jsonify({'message': 'Missing username, email, or password'}), 400
+
+    # Validate email format
+    if not EMAIL_REGEX.match(email):
+        return jsonify({'message': 'Invalid email format'}), 400
 
     # Check if user already exists
     if User.query.filter((User.username == username) | (User.email == email)).first():

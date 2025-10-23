@@ -27,17 +27,31 @@ def create_booking():
             print("🚫 Missing one or more required fields")
             return jsonify({"error": "Missing required fields"}), 400
 
+        # Validate days and travelers
+        try:
+            days = int(days)
+            if days < 1:
+                raise ValueError
+        except ValueError:
+            return jsonify({"error": "Days must be a positive integer"}), 400
+
         # Optional fields
         travel_date_str = data.get("travel_date")
         travel_date = datetime.strptime(travel_date_str, "%Y-%m-%d").date() if travel_date_str else None
-        travelers = int(data.get("travelers", 1))
+        travelers = data.get("travelers", 1)
+        try:
+            travelers = int(travelers)
+            if travelers < 1:
+                raise ValueError
+        except ValueError:
+            return jsonify({"error": "Travelers must be a positive integer"}), 400
         special_requests = data.get("special_requests", "")
 
         # Create booking
         new_booking = Booking(
             user_id=user_id,
             destination=destination,
-            days=int(days),
+            days=days,
             customer_name=customer_name,
             travel_date=travel_date,
             travelers=travelers,
