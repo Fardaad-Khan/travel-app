@@ -22,7 +22,7 @@ app.config.from_object(Config)
 app.start_time = time.time()
 
 # ------------------------------------------------------------------
-# 2. CORS – exactly the same as you had
+# 2. CORS 
 # ------------------------------------------------------------------
 CORS(
     app,
@@ -67,7 +67,7 @@ app.register_blueprint(booking_bp)
 # ------------------------------------------------------------------
 @app.route('/')
 def home():
-    return {"message": "Travel App Backend Running -v6"}
+    return {"message": "Travel App Backend Running -v7"}
 
 # ------------------------------------------------------------------
 # 6. Run only when executed directly (dev only)
